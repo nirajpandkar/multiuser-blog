@@ -7,18 +7,10 @@ body{
     position:relative;
     margin-top:0;
 }
-/*.posts{*/
-    /*margin-left:250px;*/
-    /*margin-bottom:20px;*/
-    /*width:50%;*/
-    /*box-shadow: 0 0 5px grey;*/
-    /*background-color: white;*/
-/*}*/
 
-/*.posts p{*/
-    /*margin:auto;*/
-    /*width:70%;*/
-/*}*/
+nav{
+    box-shadow:3px 3px 5px grey;
+}
 .center-title h3{
     text-align:center;
 }

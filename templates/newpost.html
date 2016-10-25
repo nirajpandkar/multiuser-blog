@@ -2,8 +2,22 @@
 
 {% block content %}
 <form method="post">
-    <input type="text" class="subject" placeholder="Subject" name="subject">
-    <input type="text" class="body" placeholder="Body" name="body">
+    <div class="form-group">
+        <label for="subject-label">Subject</label>
+        <input class="form-control" id="subject-label" type="text" name="subject">
+
+    </div>
+
+    <div class="form-group">
+        <label>Body</label>
+        <textarea id="editor" class="form-control" rows="10"
+                  name="body"></textarea>
+    </div>
     <input type="submit" value="Submit">
 </form>
+
+{% endblock %}
+
+{% block sidebar %}
+
 {% endblock %}

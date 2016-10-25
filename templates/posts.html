@@ -5,9 +5,13 @@
 
 {% for p in posts %}
     <div class="card card-block">
-        <h3 class="card-title text-xs-center">{{ p.subject }}</h3>
-        <p class="card-text">{{ p.body }}</p>
-        <p class="card-text"><small class="text-muted">5 min read</small></p>
+        <a href="/posts/{{ p.key().id() }}"><h3 class="card-title
+        text-xs-center">{{ p
+        .subject
+        |safe}}</h3></a>
+        <p class="card-text">{{ p.body.replace("\n","<br>") | safe }}</p>
+        <p class="card-text"><small class="text-muted">Published on
+            {{ p.created.strftime("%A %d %B, %Y at %H:%M:%S") }}</small></p>
     </div>
 {% endfor %}
 

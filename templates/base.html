@@ -3,19 +3,66 @@
 <head>
     <meta charset="UTF-8">
     <title>{% block title %}SMALL{% endblock %}</title>
-    <link rel="stylesheet" href="assests/blogstyle.css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.2/css/bootstrap.min.css">
+    <link rel="stylesheet" type="text/css" href="../assets/blogstyle.css">
+    <link href="https://fonts.googleapis.com/css?family=Kaushan+Script|Roboto" rel="stylesheet">
 </head>
+
 <body>
-    <h1 style = "text-align: center;">SMALL</h1>
+<!-- navbar start -->
+    <nav class="navbar navbar-dark" style="background-color:#32657e;">
+      <div class="container-fluid">
+        <div class="navbar-header">
+          <a class="navbar-brand" href="/posts" style="color:yellow;
+          font-family:Kaushan Script,cursive;
+          ">Avenue</a>
+        </div>
 
 
-    <div class = "content">
-        {% block content %}
-        {% endblock %}
+        <ul class="nav navbar-nav" style="float:right">
+            <li class="nav-item"><a href="/newpost" class="btn btn-warning">
+            <span class="glyphicon glyphicon-pencil"></span> New Post
+        </a></li>
+            <li class="nav-item"><a class="nav-link" href="#">Sign Up</a></li>
+            <li class="nav-item"><a class="nav-link" href="#">Login</a></li>
+
+        </ul>
+        <form class="form-inline float-xs-right">
+            <input class="form-control" type="text" placeholder="Search">
+            <button class="btn btn-outline-success" type="submit">Search</button>
+        </form>
+
+      </div>
+    </nav>
+<!-- navbar end -->
+
+<div class="container">
+    <div class="row" style="margin-top:40px">
+        <div class="col-md-8">
+            <div class = "content">
+                {% block content %}
+                {% endblock %}
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            {% block sidebar %}
+            {% endblock %}
+        </div>
+
     </div>
+</div>
+
 
 </body>
 <footer style = "text-align:center">
-    COPYRIGHT 2016
+    AVENUE, COPYRIGHT 2016
 </footer>
+
+
+<script src="//cdn.tinymce.com/4/tinymce.min.js"></script>
+<script src="//cdn.ckeditor.com/4.5.11/standard/ckeditor.js"></script>
+<script type="text/javascript">
+	CKEDITOR.replace( 'editor' );
+</script>
 </html>

@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <div class="card card-block">
+        <h3 class="card-title text-xs-center">{{ post.subject |safe}}</h3>
+        <p class="card-text">{{ post.body.replace("\n","<br>") | safe }}</p>
+        <p class="card-text"><small class="text-muted">Published on
+            {{ post.created.strftime("%A %d %B, %Y at %H:%M:%S") }}</small></p>
+    </div>
+{% endblock %}
+
+{% block sidebar %}
+
+{% endblock %}

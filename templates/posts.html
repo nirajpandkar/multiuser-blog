@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block title %} Front Page {% endblock %}
+{% block content %}
+
+{% for p in posts %}
+    <div class="card card-block">
+        <h3 class="card-title text-xs-center">{{ p.subject }}</h3>
+        <p class="card-text">{{ p.body }}</p>
+        <p class="card-text"><small class="text-muted">5 min read</small></p>
+    </div>
+{% endfor %}
+
+{% endblock %}
+

@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+
+{% block title %} Front Page {% endblock %}
+{% block content %}
+    {% for p in posts %}
+        {{ p.subject }}<br>
+        {{ p.body }}<br><br>
+    {% endfor %}
+{% endblock %}
+

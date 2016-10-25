@@ -29,10 +29,10 @@ class MainHandler(BlogHandler):
         self.render("base.html")
 
 
-class PostHandler(BlogHandler):
+class MultiplePostHandler(BlogHandler):
     def get(self):
-        posts = db.GqlQuery("select * from Post")
-        self.render("front.html", posts=posts)
+        posts = db.GqlQuery("select * from Post order by created DESC")
+        self.render("posts.html", posts=posts)
 
 
 class NewPostHandler(BlogHandler):
@@ -46,8 +46,15 @@ class NewPostHandler(BlogHandler):
         Post(subject=subject, body=body).put()
         self.redirect("/posts")
 
+
+class PermaLinkHandler(BlogHandler):
+    def get(self, post_id):
+        post = Post.get_by_id(int(post_id))
+        self.render("permalink.html", post=post)
+
 app = webapp2.WSGIApplication([
     ('/', MainHandler),
-    ('/posts', PostHandler),
+    ('/posts', MultiplePostHandler),
+    ('/posts/(\d+)', PermaLinkHandler),
     ('/newpost', NewPostHandler)
 ], debug=True)

@@ -1,0 +1,24 @@
+body{
+    background-color: whitesmoke;
+    font-family:Roboto,sans-serif;
+}
+
+.navigation h1{
+    position:relative;
+    margin-top:0;
+}
+/*.posts{*/
+    /*margin-left:250px;*/
+    /*margin-bottom:20px;*/
+    /*width:50%;*/
+    /*box-shadow: 0 0 5px grey;*/
+    /*background-color: white;*/
+/*}*/
+
+/*.posts p{*/
+    /*margin:auto;*/
+    /*width:70%;*/
+/*}*/
+.center-title h3{
+    text-align:center;
+}

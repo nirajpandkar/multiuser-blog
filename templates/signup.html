@@ -5,23 +5,35 @@
 {% block content %}
 
     <form method="post">
-        <label>Username:</label>
-        <input type="text" name="username" value="{{ username }}">
-        <span class="error">{{ error_username }}</span><br>
 
-        <label>Password:</label>
-        <input type="password" name="password" value="">
-        <span class="error">{{ error_password }}</span><br>
+        <div class="input-group">
+            <input type="text" name="username" class="form-control" value="{{
+                    username }}" placeholder="Username" style="width:300px">
+            <span class="error">{{ error_username }}</span><br><br>
+        </div>
 
-        <label>Verify Password:</label>
-        <input type="password" name="verify_password" value="">
-        <span class="error">{{ error_verify_password }}</span><br>
+        <div class="input-group">
+            <input type="password" name="password" value=""
+                   placeholder="Password" class="form-control"
+                   style="width:300px">
+            <span class="error">{{ error_password }}</span><br><br>
+        </div>
 
-        <label>Email(Optional):</label>
-        <input type="email" name="email" value="{{ email }}">
-        <span class="error">{{ error_email }}</span><br>
+        <div class="input-group">
+            <input type="password" name="verify_password" value=""
+               placeholder="Verify password" class="form-control"
+            style="width:300px">
+        <span class="error">{{ error_verify_password }}</span><br><br>
+        </div>
 
-        <input type="submit" value="Submit">
+        <div class="input-group">
+            <input type="email" name="email" value="{{ email }}"
+               placeholder="Email(optional)" class="form-control"
+            style="width:300px">
+        <span class="error">{{ error_email }}</span><br><br>
+        </div>
+
+        <input type="submit" value="Submit" class="btn btn-primary">
     </form>
 
 {% endblock %}

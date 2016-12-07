@@ -22,6 +22,8 @@ EMAIL_RE = re.compile(r"^[\S]+@[\S]+.[\S]+$")
 SECRET = "1497d98baea787eb6a8a676145c44212"
 
 # Hashing, Salting
+
+
 def make_secure_val(val):
     return "%s|%s" % (val, hmac.new(SECRET, val).hexdigest())
 
@@ -39,14 +41,15 @@ def make_salt(length=5):
 def make_pw_hash(name, pw, salt=None):
     if not salt:
         salt = make_salt()
-    h = hashlib.sha256(name + pw + salt)
+    h = hashlib.sha256(name + pw + salt).hexdigest()
     return "%s|%s" % (salt, h)
 
 
-def valid_pw(name, pw, h):
+def valid_pw_hash(name, pw, h):
     salt = h.split("|")[0]
     return make_pw_hash(name, pw, salt) == h
 # Validation
+
 
 def valid_username(username):
     return username and USER_RE.match(username)
@@ -82,41 +85,52 @@ class BlogHandler(webapp2.RequestHandler):
         cookie_val = self.request.cookies.get(name)
         return cookie_val and check_secure_val(cookie_val)
 
-    def login(self, user):
+    def set_login_cookie(self, user):
         self.set_secure_cookie('user_id', str(user.key().id()))
 
-    def logout(self):
+    def reset_cookie(self):
         self.response.headers.add_header('Set-Cookie', 'user_id=; Path=/')
+
+    def initialize(self, *a, **kw):
+        webapp2.RequestHandler.initialize(self, *a, **kw)
+        uid = self.read_secure_cookie('user_id')
+        self.user = uid and User.by_id(int(uid))
 
 
 class MainHandler(BlogHandler):
     def get(self):
-        self.render("base.html")
+        self.render("base.html", username=self.user)
 
 
 class MultiplePostHandler(BlogHandler):
     def get(self):
         posts = db.GqlQuery("select * from Post order by created DESC")
-        self.render("posts.html", posts=posts)
+        self.render("posts.html", posts=posts, username=self.user)
 
 
 class NewPostHandler(BlogHandler):
     def get(self):
-        self.render("newpost.html")
+        if self.read_secure_cookie("user_id"):
+            self.render("newpost.html", username=self.user)
+        else:
+            self.redirect("/signup")
 
     def post(self):
         subject = self.request.get("subject")
         body = self.request.get("body")
 
-        Post(subject=subject, body=body).put()
+        user_id = self.read_secure_cookie("user_id").split("|")[0]
+        username = User.by_id(int(user_id)).name
+        author = username.capitalize()
+
+        Post(subject=subject, body=body, author=author).put()
         self.redirect("/posts")
 
 
 class PermaLinkHandler(BlogHandler):
     def get(self, post_id):
         post = Post.get_by_id(int(post_id))
-        self.render("permalink.html", post=post)
-
+        self.render("permalink.html", post=post, username=self.user)
 # Authentication Handlers
 
 
@@ -127,7 +141,8 @@ class User(db.Model):
 
     @classmethod
     def by_id(cls, uid):
-        return User.get_by_id(uid)
+        return User.get_by_id(uid)  # Replace User with cls for reusing
+        # modules
 
     @classmethod
     def by_name(cls, name):
@@ -142,15 +157,12 @@ class User(db.Model):
 
     @classmethod
     def login(cls, name, pw):
-        u = cls.by_name(name)
-        if u and valid_pw(name, pw, u.pw_hash):
+        u = User.by_name(name)
+        if u and valid_pw_hash(name, pw, u.pw_hash):
             return u
 
 
 class SignUpHandler(BlogHandler):
-    username = "niraj"
-    password = "super"
-
     def get(self):
         self.render("signup.html")
 
@@ -189,19 +201,41 @@ class SignUpHandler(BlogHandler):
             else:
                 u = User.register(username, password, email)
                 u.put()
-                self.login(u)
+                self.set_login_cookie(u)    # Will have to be outside body
+                # of else if anonymous users are allowed
                 self.redirect("/welcome")
+
+
+class LoginHandler(BlogHandler):
+    def get(self):
+        self.render("login.html")
+
+    def post(self):
+        username = self.request.get("username")
+        password = self.request.get("password")
+
+        u = User.login(username, password)  # check whether username and
+        # password are correct
+
+        if u:
+            self.set_login_cookie(u)
+            self.redirect("/welcome")
+        else:
+            error_msg = "User doesn't exists or wrong password"  # Can be
+            # fine tuned for precise errors
+            self.render("login.html", error_username=error_msg)
+
+
+class LogoutHandler(BlogHandler):
+    def get(self):
+        self.reset_cookie()
+        self.redirect("/signup")
 
 
 class WelcomeHandler(BlogHandler):
     def get(self):
-        if self.read_secure_cookie("user_id"):
-            user_id = self.read_secure_cookie("user_id").split("|")[0]
-            user = User.by_id(int(user_id))
-            if user:
-                self.render("welcome.html", username=user.name)
-            else:
-                self.redirect("/signup")
+        if self.user:
+            self.render("welcome.html", username=self.user)
         else:
             self.redirect("/signup")
 
@@ -212,5 +246,7 @@ app = webapp2.WSGIApplication([
     ('/posts/(\d+)', PermaLinkHandler),
     ('/newpost', NewPostHandler),
     ('/signup', SignUpHandler),
-    ('/welcome', WelcomeHandler)
+    ('/login', LoginHandler),
+    ('/logout', LogoutHandler),
+    ('/welcome', WelcomeHandler),
 ], debug=True)

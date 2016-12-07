@@ -1,5 +1,21 @@
 {% extends "base.html" %}
 
 {% block content %}
-    <h1>WELCOME </h1>{{ username.name }}
+    <div style="text-align:center">
+    <h1>Welcome, {{ username.name.capitalize() }}</h1>
+
+    <h2> Write a
+        <a href="/newpost" class="btn btn-warning">
+            <span class="glyphicon glyphicon-pencil"></span> New Post
+        </a>
+    </h2>
+
+    <span><h3>OR</h3></span>
+
+    <h2>
+        <a href="/posts" class="btn btn-primary">
+            <span class="glyphicon glyphicon-eye-open"></span> Get Inspired
+        </a>
+    </h2>
+    </div>
 {% endblock %}

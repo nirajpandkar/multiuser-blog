@@ -6,4 +6,5 @@ class Post(db.Model):
     body = db.TextProperty(required=True)
     created = db.DateTimeProperty(auto_now_add=True)
     author = db.StringProperty()
+    last_edited = db.DateTimeProperty(auto_now_add=True)
 

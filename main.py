@@ -7,6 +7,8 @@ import hmac
 import random
 import string
 import hashlib
+import datetime
+import time
 from google.appengine.ext import db
 
 from models import Post
@@ -105,7 +107,13 @@ class MainHandler(BlogHandler):
 class MultiplePostHandler(BlogHandler):
     def get(self):
         posts = db.GqlQuery("select * from Post order by created DESC")
-        self.render("posts.html", posts=posts, username=self.user)
+        if self.user:
+            user = self.user
+            logged_in_user = user.name.capitalize()
+        else:
+            logged_in_user = ""
+        self.render("posts.html", posts=posts, username=self.user,
+                    logged_in_user=logged_in_user)
 
 
 class NewPostHandler(BlogHandler):
@@ -124,6 +132,7 @@ class NewPostHandler(BlogHandler):
         author = username.capitalize()
 
         Post(subject=subject, body=body, author=author).put()
+        time.sleep(0.1)
         self.redirect("/posts")
 
 
@@ -240,8 +249,32 @@ class WelcomeHandler(BlogHandler):
             self.redirect("/signup")
 
 
+class EditPostHandler(BlogHandler):
+    def get(self, post_id):
+        post = Post.get_by_id(int(post_id))
+        self.render("edit.html", post=post, username=self.user)
+
+    def post(self, post_id):
+        post = Post.get_by_id(int(post_id))
+        new_subject = self.request.get("subject")
+        new_body = self.request.get("body")
+
+        post.subject = new_subject
+        post.body = new_body
+        post.last_edited = datetime.datetime.now()
+        post.put()
+        self.redirect("/posts/" + str(post_id))
+
+
+class DeletePostHandler(BlogHandler):
+    def get(self, post_id):
+        post = Post.get_by_id(int(post_id))
+        post.delete()
+        time.sleep(0.1)
+        self.redirect('/posts')
+
 app = webapp2.WSGIApplication([
-    ('/', MainHandler),
+    ('/', MultiplePostHandler),
     ('/posts', MultiplePostHandler),
     ('/posts/(\d+)', PermaLinkHandler),
     ('/newpost', NewPostHandler),
@@ -249,4 +282,6 @@ app = webapp2.WSGIApplication([
     ('/login', LoginHandler),
     ('/logout', LogoutHandler),
     ('/welcome', WelcomeHandler),
+    ('/edit/(\d+)', EditPostHandler),
+    ('/delete/(\d+)', DeletePostHandler)
 ], debug=True)

@@ -305,8 +305,13 @@ class NewCommentHandler(BlogHandler):
 
 class EditCommentHandler(BlogHandler):
     def get(self, comment_id):
+        post_info = db.GqlQuery("SELECT * FROM Comment where __key__ = KEY("
+                           "'Comment'," + comment_id + ")")
+        for p in post_info:
+            post = Post.get_by_id(int(p.post_id))
         comment = Comment.get_by_id(int(comment_id))
-        self.render("editcomment.html", comment=comment)
+        time.sleep(0.1)
+        self.render("editcomment.html", comment=comment, post=post)
 
     def post(self, comment_id):
         body = self.request.get("body")

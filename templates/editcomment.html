@@ -1,14 +1,24 @@
 {% extends "base.html" %}
 
 {% block content %}
-<form method="post">
-    <div class="form-group">
-        <label>Body</label>
-        <textarea id="editor" class="form-control" rows="10"
-                  name="body">{{ comment.body }}</textarea>
+
+    <div class="card card-block">
+        <h3 class="card-title text-xs-center">{{ post.subject |safe}}</h3>
+        <p class="card-text">{{ post.body.replace("\n","<br>") | safe }}</p>
+        <p class="card-text"><small class="text-muted">Published on
+            {{ post.created.strftime("%A %d %B, %Y at %H:%M:%S") }}</small></p>
     </div>
-    <input type="submit" value="Submit">
-</form>
+
+    <br>
+    <h3>Response</h3>
+    <form method="post">
+        <div class="form-group">
+
+            <textarea rows="4" cols="40"
+                      name="body">{{ comment.body }}</textarea>
+        </div>
+        <input type="submit" value="Submit">
+    </form>
 
 {% endblock %}
 

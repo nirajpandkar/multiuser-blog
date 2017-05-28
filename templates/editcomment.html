@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block content %}
+<form method="post">
+    <div class="form-group">
+        <label>Body</label>
+        <textarea id="editor" class="form-control" rows="10"
+                  name="body">{{ comment.body }}</textarea>
+    </div>
+    <input type="submit" value="Submit">
+</form>
+
+{% endblock %}
+
+{% block sidebar %}
+
+{% endblock %}

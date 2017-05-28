@@ -116,26 +116,6 @@ class MultiplePostHandler(BlogHandler):
                     logged_in_user=logged_in_user)
 
 
-class NewCommentHandler(BlogHandler):
-    def get(self, post_id):
-        if self.read_secure_cookie("user_id"):
-            post = Post.get_by_id(int(post_id))
-            self.render("newcomment.html", post=post, username=self.user)
-        else:
-            self.redirect("/signup")
-
-    def post(self, post_id):
-        body = self.request.get("body")
-
-        user_id = self.read_secure_cookie("user_id").split("|")[0]
-        username = User.by_id(int(user_id)).name
-        author = username.capitalize()
-
-        Comment(body=body, author=author, post_id=int(post_id)).put()
-        time.sleep(0.1)
-        self.redirect("/posts/" + str(post_id))
-
-
 class NewPostHandler(BlogHandler):
     def get(self):
         if self.read_secure_cookie("user_id"):
@@ -158,10 +138,15 @@ class NewPostHandler(BlogHandler):
 
 class PermaLinkHandler(BlogHandler):
     def get(self, post_id):
+        if self.user:
+            user = self.user
+            logged_in_user = user.name.capitalize()
+        else:
+            logged_in_user = ""
         post = Post.get_by_id(int(post_id))
         comments = db.GqlQuery("select * from Comment where post_id=" + post_id)
         self.render("permalink.html", post=post, username=self.user,
-                    comments=comments)
+                    comments=comments, logged_in_user=logged_in_user)
 
 
 # Authentication Handlers
@@ -298,6 +283,55 @@ class DeletePostHandler(BlogHandler):
         self.redirect('/posts')
 
 
+class NewCommentHandler(BlogHandler):
+    def get(self, post_id):
+        if self.read_secure_cookie("user_id"):
+            post = Post.get_by_id(int(post_id))
+            self.render("newcomment.html", post=post, username=self.user)
+        else:
+            self.redirect("/signup")
+
+    def post(self, post_id):
+        body = self.request.get("body")
+
+        user_id = self.read_secure_cookie("user_id").split("|")[0]
+        username = User.by_id(int(user_id)).name
+        author = username.capitalize()
+
+        Comment(body=body, author=author, post_id=int(post_id)).put()
+        time.sleep(0.1)
+        self.redirect("/posts/" + str(post_id))
+
+
+class EditCommentHandler(BlogHandler):
+    def get(self, comment_id):
+        comment = Comment.get_by_id(int(comment_id))
+        self.render("editcomment.html", comment=comment)
+
+    def post(self, comment_id):
+        body = self.request.get("body")
+        comment = Comment.get_by_id(int(comment_id))
+        post = db.GqlQuery("SELECT * FROM Comment where __key__ = KEY("
+                           "'Comment'," + comment_id + ")")
+
+        comment.body = body
+        comment.last_edited = datetime.datetime.now()
+        comment.put()
+        time.sleep(0.1)
+        for p in post:
+            self.redirect("/posts/" + str(p.post_id))
+
+
+class DeleteCommentHandler(BlogHandler):
+    def get(self, comment_id):
+        posts = db.GqlQuery("SELECT * FROM Comment where __key__ = KEY("
+                           "'Comment'," + comment_id + ")")
+        comment = Comment.get_by_id(int(comment_id))
+        comment.delete()
+        time.sleep(0.09)    # trial and error, wasn't getting redirected
+        # properly
+        for p in posts:
+            self.redirect("/posts/" + str(p.post_id))
 
 app = webapp2.WSGIApplication([
     ('/', MultiplePostHandler),
@@ -310,5 +344,7 @@ app = webapp2.WSGIApplication([
     ('/welcome', WelcomeHandler),
     ('/edit/(\d+)', EditPostHandler),
     ('/delete/(\d+)', DeletePostHandler),
-    ('/newcomment/(\d+)', NewCommentHandler)
+    ('/newcomment/(\d+)', NewCommentHandler),
+    ('/editcomment/(\d+)', EditCommentHandler),
+    ('/deletecomment/(\d+)', DeleteCommentHandler)
 ], debug=True)

@@ -20,6 +20,23 @@
                     {{ c.created.strftime("%A %d %B, %Y at %H:%M:%S") }}</small></p>
             </div>
 
+            {% if c.author == logged_in_user %}
+                <a href="/editcomment/{{ c.key().id() }}">
+                    <button class="btn btn-primary pull-left">
+                        <span class="glyphicon glyphicon-pencil"></span>
+                        Edit
+                    </button>
+                </a>
+
+                <a href="/deletecomment/{{ c.key().id() }}">
+                    <button class="btn btn-error">
+                        <span class="glyphicon glyphicon-pencil"></span>
+                        Delete
+                    </button>
+                </a>
+            {% endif %}
         {% endfor %}
+
+
     {% endif %}
 {% endblock %}

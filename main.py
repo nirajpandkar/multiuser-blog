@@ -11,7 +11,7 @@ import datetime
 import time
 from google.appengine.ext import db
 
-from models import Post
+from models import Post, Comment
 
 template_dir = os.path.join(os.path.dirname(__file__), 'templates')
 jinja_env = jinja2.Environment(loader=jinja2.FileSystemLoader(template_dir),
@@ -116,6 +116,26 @@ class MultiplePostHandler(BlogHandler):
                     logged_in_user=logged_in_user)
 
 
+class NewCommentHandler(BlogHandler):
+    def get(self, post_id):
+        if self.read_secure_cookie("user_id"):
+            post = Post.get_by_id(int(post_id))
+            self.render("newcomment.html", post=post, username=self.user)
+        else:
+            self.redirect("/signup")
+
+    def post(self, post_id):
+        body = self.request.get("body")
+
+        user_id = self.read_secure_cookie("user_id").split("|")[0]
+        username = User.by_id(int(user_id)).name
+        author = username.capitalize()
+
+        Comment(body=body, author=author, post_id=int(post_id)).put()
+        time.sleep(0.1)
+        self.redirect("/posts/" + str(post_id))
+
+
 class NewPostHandler(BlogHandler):
     def get(self):
         if self.read_secure_cookie("user_id"):
@@ -139,7 +159,11 @@ class NewPostHandler(BlogHandler):
 class PermaLinkHandler(BlogHandler):
     def get(self, post_id):
         post = Post.get_by_id(int(post_id))
-        self.render("permalink.html", post=post, username=self.user)
+        comments = db.GqlQuery("select * from Comment where post_id=" + post_id)
+        self.render("permalink.html", post=post, username=self.user,
+                    comments=comments)
+
+
 # Authentication Handlers
 
 
@@ -273,6 +297,8 @@ class DeletePostHandler(BlogHandler):
         time.sleep(0.1)
         self.redirect('/posts')
 
+
+
 app = webapp2.WSGIApplication([
     ('/', MultiplePostHandler),
     ('/posts', MultiplePostHandler),
@@ -283,5 +309,6 @@ app = webapp2.WSGIApplication([
     ('/logout', LogoutHandler),
     ('/welcome', WelcomeHandler),
     ('/edit/(\d+)', EditPostHandler),
-    ('/delete/(\d+)', DeletePostHandler)
+    ('/delete/(\d+)', DeletePostHandler),
+    ('/newcomment/(\d+)', NewCommentHandler)
 ], debug=True)

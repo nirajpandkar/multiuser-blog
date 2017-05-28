@@ -7,4 +7,19 @@
         <p class="card-text"><small class="text-muted">Published on
             {{ post.created.strftime("%A %d %B, %Y at %H:%M:%S") }}</small></p>
     </div>
+    <br>
+    <h3>Responses</h3>
+    {% if comments %}
+        <br>
+        {% for c in comments %}
+
+            <b>{{ c.author }} said: </b>
+            <div class="card card-block comment-block">
+                <p class="card-text">{{ c.body.replace("\n","<br>") | safe }}</p>
+                <p class="card-text"><small class="text-muted">Published on
+                    {{ c.created.strftime("%A %d %B, %Y at %H:%M:%S") }}</small></p>
+            </div>
+
+        {% endfor %}
+    {% endif %}
 {% endblock %}

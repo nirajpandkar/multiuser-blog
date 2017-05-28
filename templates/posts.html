@@ -29,6 +29,13 @@
                 </button>
             </a>
         {% endif %}
+
+        <a href="/newcomment/{{ p.key().id() }}">
+            <button class="btn btn-info">
+                <span class="glyphicon glyphicon-pencil"></span>
+                Comment
+            </button>
+        </a>
     </div>
 {% endfor %}
 

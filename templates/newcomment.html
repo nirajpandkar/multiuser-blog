@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+    <div class="card card-block">
+        <h3 class="card-title text-xs-center">{{ post.subject |safe}}</h3>
+        <p class="card-text">{{ post.body.replace("\n","<br>") | safe }}</p>
+        <p class="card-text"><small class="text-muted">Published on
+            {{ post.created.strftime("%A %d %B, %Y at %H:%M:%S") }}</small></p>
+    </div>
+
+    {#comment section start#}
+    <form method="post">
+        Response
+        <div class="form-group">
+            <textarea name="body" rows="4" cols="40"></textarea>
+        </div>
+        <input type="submit" value="Submit">
+    </form>
+
+{% endblock %}
+
+{% block sidebar %}
+
+{% endblock %}

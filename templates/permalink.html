@@ -6,7 +6,7 @@
         <p class="card-text">{{ post.body.replace("\n","<br>") | safe }}</p>
         <p class="card-text">
             <small class="text-muted">Published
-                by <b>{{ post.author }}</b>
+                by <b>{{ post.author.capitalize() }}</b>
                 on <b>{{ post.created.strftime("%A %d %B, %Y at
                 %H:%M:%S") }}</b>
             </small>

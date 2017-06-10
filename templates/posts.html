@@ -10,7 +10,7 @@
         .subject
         |safe}}</h1></a>
         <p class="card-text"><small class="text-muted">Published
-            by <b>{{ p.author }}</b>
+            by <b>{{ p.author.capitalize() }}</b>
             on <b>{{ p.created.strftime("%A %d %B, %Y") }}</b></small></p>
         <p class="card-text">{{ p.body.replace("\n","<br>") | safe }}</p>
 

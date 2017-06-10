@@ -4,14 +4,11 @@ import jinja2
 import os
 import re
 import hmac
-import random
-import string
-import hashlib
 import datetime
 import time
 from google.appengine.ext import db
 
-from models import Post, Comment
+from models import Post, Comment, User
 
 template_dir = os.path.join(os.path.dirname(__file__), 'templates')
 jinja_env = jinja2.Environment(loader=jinja2.FileSystemLoader(template_dir),
@@ -36,20 +33,6 @@ def check_secure_val(val):
         return original
 
 
-def make_salt(length=5):
-    return "".join(random.choice(string.letters) for x in xrange(length))
-
-
-def make_pw_hash(name, pw, salt=None):
-    if not salt:
-        salt = make_salt()
-    h = hashlib.sha256(name + pw + salt).hexdigest()
-    return "%s|%s" % (salt, h)
-
-
-def valid_pw_hash(name, pw, h):
-    salt = h.split("|")[0]
-    return make_pw_hash(name, pw, salt) == h
 # Validation
 
 
@@ -63,6 +46,8 @@ def valid_password(password):
 
 def valid_email(email):
     return not email or EMAIL_RE.match(email)
+
+# Handlers
 
 
 class BlogHandler(webapp2.RequestHandler):
@@ -98,92 +83,7 @@ class BlogHandler(webapp2.RequestHandler):
         uid = self.read_secure_cookie('user_id')
         self.user = uid and User.by_id(int(uid))
 
-
-class MainHandler(BlogHandler):
-    def get(self):
-        self.render("base.html", username=self.user)
-
-
-class MultiplePostHandler(BlogHandler):
-    def get(self):
-        posts = db.GqlQuery("select * from Post order by created DESC")
-        if self.user:
-            user = self.user
-            logged_in_user = user.name.capitalize()
-        else:
-            logged_in_user = ""
-        self.render("posts.html", posts=posts, username=self.user,
-                    logged_in_user=logged_in_user)
-
-
-class NewPostHandler(BlogHandler):
-    def get(self):
-        if self.read_secure_cookie("user_id"):
-            self.render("newpost.html", username=self.user)
-        else:
-            self.redirect("/login")
-
-    def post(self):
-        subject = self.request.get("subject")
-        body = self.request.get("body")
-
-        if not body or not subject:
-            error = "Subject and body can't be blank!"
-            self.render("newpost.html", username=self.user, error=error,
-                        subject=subject, body=body)
-        else:
-            user_id = self.read_secure_cookie("user_id").split("|")[0]
-            username = User.by_id(int(user_id)).name
-            author = username.capitalize()
-
-            Post(subject=subject, body=body, author=author).put()
-            time.sleep(0.1)
-            self.redirect("/posts")
-
-
-class PermaLinkHandler(BlogHandler):
-    def get(self, post_id):
-        if self.user:
-            user = self.user
-            logged_in_user = user.name.capitalize()
-        else:
-            logged_in_user = ""
-        post = Post.get_by_id(int(post_id))
-        comments = db.GqlQuery("select * from Comment where post_id=" +
-                               post_id).fetch(limit=None)
-        self.render("permalink.html", post=post, username=self.user,
-                    comments=comments, logged_in_user=logged_in_user)
-
-
-# Authentication Handlers
-
-
-class User(db.Model):
-    name = db.StringProperty(required=True)
-    pw_hash = db.StringProperty(required=True)
-    email = db.StringProperty()
-
-    @classmethod
-    def by_id(cls, uid):
-        return User.get_by_id(uid)  # Replace User with cls for reusing
-        # modules
-
-    @classmethod
-    def by_name(cls, name):
-        return User.all().filter('name =', name).get()
-
-    @classmethod
-    def register(cls, name, pw, email=None):
-        password_hash = make_pw_hash(name, pw)
-        return User(name=name,
-                    pw_hash=password_hash,
-                    email=email)
-
-    @classmethod
-    def login(cls, name, pw):
-        u = User.by_name(name)
-        if u and valid_pw_hash(name, pw, u.pw_hash):
-            return u
+# User authentication handlers
 
 
 class SignUpHandler(BlogHandler):
@@ -207,6 +107,7 @@ class SignUpHandler(BlogHandler):
         if not valid_password(password):
             params['error_password'] = "Invalid password"
             have_error = True
+
         elif password != verify_password:
             params['error_verify_password'] = "Passwords do not match"
             have_error = True
@@ -215,6 +116,7 @@ class SignUpHandler(BlogHandler):
             params['error_email'] = "Invalid email"
             have_error = True
 
+        print "Params: " + str(params)
         if have_error:
             self.render("signup.html", **params)
         else:
@@ -256,12 +158,46 @@ class LogoutHandler(BlogHandler):
         self.redirect("/signup")
 
 
-class WelcomeHandler(BlogHandler):
+class MainHandler(BlogHandler):
     def get(self):
+        self.render("base.html", username=self.user)
+
+
+class MultiplePostHandler(BlogHandler):
+    def get(self):
+        posts = db.GqlQuery("select * from Post order by created DESC")
         if self.user:
-            self.render("welcome.html", username=self.user)
+            user = self.user
+            logged_in_user = user.name
         else:
-            self.redirect("/signup")
+            logged_in_user = ""
+        self.render("posts.html", posts=posts, username=self.user,
+                    logged_in_user=logged_in_user)
+
+
+class NewPostHandler(BlogHandler):
+    def get(self):
+        if self.read_secure_cookie("user_id"):
+            self.render("newpost.html", username=self.user)
+        else:
+            self.redirect("/login")
+
+    def post(self):
+        subject = self.request.get("subject")
+        body = self.request.get("body")
+
+        if not body or not subject:
+            error = "Subject and body can't be blank!"
+            self.render("newpost.html", username=self.user, error=error,
+                        subject=subject, body=body)
+        else:
+            user_id = self.read_secure_cookie("user_id").split("|")[0]
+            username = User.by_id(int(user_id)).name
+            author = username
+
+            Post(subject=subject, body=body, author=author).put()
+            time.sleep(0.1)
+            self.redirect("/posts")
 
 
 class EditPostHandler(BlogHandler):
@@ -269,7 +205,7 @@ class EditPostHandler(BlogHandler):
         post = Post.get_by_id(int(post_id))
 
         if self.read_secure_cookie("user_id"):
-            self.render("edit.html", post=post, username=self.user)
+            self.render("edit.html", post=post)
         else:
             self.redirect("/login")
 
@@ -315,10 +251,8 @@ class NewCommentHandler(BlogHandler):
             self.render("newcomment.html", post=post, username=self.user,
                         error=error)
         else:
-            print "IN"
             user_id = self.read_secure_cookie("user_id").split("|")[0]
-            username = User.by_id(int(user_id)).name
-            author = username.capitalize()
+            author = User.by_id(int(user_id)).name
 
             Comment(body=body, author=author, post_id=int(post_id)).put()
             time.sleep(0.1)
@@ -363,6 +297,41 @@ class DeleteCommentHandler(BlogHandler):
             continue
         self.redirect("/posts/" + str(p.post_id))
 
+
+class PermaLinkHandler(BlogHandler):
+    def get(self, post_id):
+        if self.user:
+            user = self.user
+            logged_in_user = user.name
+        else:
+            logged_in_user = ""
+        post = Post.get_by_id(int(post_id))
+        comments = db.GqlQuery("select * from Comment where post_id=" +
+                               post_id).fetch(limit=None)
+        self.render("permalink.html", post=post, username=self.user,
+                    comments=comments, logged_in_user=logged_in_user)
+
+
+class WelcomeHandler(BlogHandler):
+    def get(self):
+        if self.user:
+            self.render("welcome.html", username=self.user)
+        else:
+            self.redirect("/signup")
+
+
+class LikePostHandler(BlogHandler):
+    def get(self, post_id):
+        post = Post.get_by_id(int(post_id))
+        user_id = self.user.key().id()
+
+
+        if self.user not in post.liked_users:
+            post.liked_users.append(user_id)
+        else:
+            post.liked_users.remove(user_id)
+
+
 app = webapp2.WSGIApplication([
     ('/', MultiplePostHandler),
     ('/posts', MultiplePostHandler),
@@ -376,5 +345,6 @@ app = webapp2.WSGIApplication([
     ('/delete/(\d+)', DeletePostHandler),
     ('/newcomment/(\d+)', NewCommentHandler),
     ('/editcomment/(\d+)', EditCommentHandler),
-    ('/deletecomment/(\d+)', DeleteCommentHandler)
+    ('/deletecomment/(\d+)', DeleteCommentHandler),
+    ('/likepost/(\d+)', LikePostHandler)
 ], debug=True)

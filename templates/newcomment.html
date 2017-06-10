@@ -5,17 +5,25 @@
     <div class="card card-block">
         <h3 class="card-title text-xs-center">{{ post.subject |safe}}</h3>
         <p class="card-text">{{ post.body.replace("\n","<br>") | safe }}</p>
-        <p class="card-text"><small class="text-muted">Published on
-            {{ post.created.strftime("%A %d %B, %Y at %H:%M:%S") }}</small></p>
+        <p class="card-text">
+            <small class="text-muted">Published
+            by <b>{{ post.author }}</b>
+            on <b>{{ post.created.strftime("%A %d %B, %Y at %H:%M:%S")
+                    }}</b>
+            </small>
+        </p>
     </div>
-
     {#comment section start#}
     <form method="post">
         Response
         <div class="form-group">
             <textarea name="body" rows="4" cols="40"></textarea>
         </div>
-        <input type="submit" value="Submit">
+        <span style="color:red">{{ error }}</span><br>
+        <input class="btn btn-primary" type="submit" value="Submit">
+        <a href="/posts" class="btn btn-secondary">
+            Cancel
+        </a>
     </form>
 
 {% endblock %}

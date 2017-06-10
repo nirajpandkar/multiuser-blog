@@ -121,19 +121,24 @@ class NewPostHandler(BlogHandler):
         if self.read_secure_cookie("user_id"):
             self.render("newpost.html", username=self.user)
         else:
-            self.redirect("/signup")
+            self.redirect("/login")
 
     def post(self):
         subject = self.request.get("subject")
         body = self.request.get("body")
 
-        user_id = self.read_secure_cookie("user_id").split("|")[0]
-        username = User.by_id(int(user_id)).name
-        author = username.capitalize()
+        if not body or not subject:
+            error = "Subject and body can't be blank!"
+            self.render("newpost.html", username=self.user, error=error,
+                        subject=subject, body=body)
+        else:
+            user_id = self.read_secure_cookie("user_id").split("|")[0]
+            username = User.by_id(int(user_id)).name
+            author = username.capitalize()
 
-        Post(subject=subject, body=body, author=author).put()
-        time.sleep(0.1)
-        self.redirect("/posts")
+            Post(subject=subject, body=body, author=author).put()
+            time.sleep(0.1)
+            self.redirect("/posts")
 
 
 class PermaLinkHandler(BlogHandler):
@@ -144,7 +149,8 @@ class PermaLinkHandler(BlogHandler):
         else:
             logged_in_user = ""
         post = Post.get_by_id(int(post_id))
-        comments = db.GqlQuery("select * from Comment where post_id=" + post_id)
+        comments = db.GqlQuery("select * from Comment where post_id=" +
+                               post_id).fetch(limit=None)
         self.render("permalink.html", post=post, username=self.user,
                     comments=comments, logged_in_user=logged_in_user)
 
@@ -261,18 +267,28 @@ class WelcomeHandler(BlogHandler):
 class EditPostHandler(BlogHandler):
     def get(self, post_id):
         post = Post.get_by_id(int(post_id))
-        self.render("edit.html", post=post, username=self.user)
+
+        if self.read_secure_cookie("user_id"):
+            self.render("edit.html", post=post, username=self.user)
+        else:
+            self.redirect("/login")
 
     def post(self, post_id):
         post = Post.get_by_id(int(post_id))
         new_subject = self.request.get("subject")
         new_body = self.request.get("body")
 
-        post.subject = new_subject
-        post.body = new_body
-        post.last_edited = datetime.datetime.now()
-        post.put()
-        self.redirect("/posts/" + str(post_id))
+        if not new_body or not new_subject:
+            post = Post.get_by_id(int(post_id))
+            error = "Body and subject can't be blank!"
+            self.render("edit.html", post=post, username=self.user,
+                        error=error)
+        else:
+            post.subject = new_subject
+            post.body = new_body
+            post.last_edited = datetime.datetime.now()
+            post.put()
+            self.redirect("/posts/" + str(post_id))
 
 
 class DeletePostHandler(BlogHandler):
@@ -293,22 +309,29 @@ class NewCommentHandler(BlogHandler):
 
     def post(self, post_id):
         body = self.request.get("body")
+        if not body:
+            post = Post.get_by_id(int(post_id))
+            error = "Comment can't be blank"
+            self.render("newcomment.html", post=post, username=self.user,
+                        error=error)
+        else:
+            print "IN"
+            user_id = self.read_secure_cookie("user_id").split("|")[0]
+            username = User.by_id(int(user_id)).name
+            author = username.capitalize()
 
-        user_id = self.read_secure_cookie("user_id").split("|")[0]
-        username = User.by_id(int(user_id)).name
-        author = username.capitalize()
-
-        Comment(body=body, author=author, post_id=int(post_id)).put()
-        time.sleep(0.1)
-        self.redirect("/posts/" + str(post_id))
+            Comment(body=body, author=author, post_id=int(post_id)).put()
+            time.sleep(0.1)
+            self.redirect("/posts/" + str(post_id))
 
 
 class EditCommentHandler(BlogHandler):
     def get(self, comment_id):
         post_info = db.GqlQuery("SELECT * FROM Comment where __key__ = KEY("
-                           "'Comment'," + comment_id + ")")
+                           "'Comment'," + comment_id + ")").fetch(1)
         for p in post_info:
-            post = Post.get_by_id(int(p.post_id))
+            continue
+        post = Post.get_by_id(int(p.post_id))
         comment = Comment.get_by_id(int(comment_id))
         time.sleep(0.1)
         self.render("editcomment.html", comment=comment, post=post)
@@ -317,26 +340,28 @@ class EditCommentHandler(BlogHandler):
         body = self.request.get("body")
         comment = Comment.get_by_id(int(comment_id))
         post = db.GqlQuery("SELECT * FROM Comment where __key__ = KEY("
-                           "'Comment'," + comment_id + ")")
+                           "'Comment'," + comment_id + ")").fetch(1)
 
         comment.body = body
         comment.last_edited = datetime.datetime.now()
         comment.put()
         time.sleep(0.1)
         for p in post:
-            self.redirect("/posts/" + str(p.post_id))
+            continue
+        self.redirect("/posts/" + str(p.post_id))
 
 
 class DeleteCommentHandler(BlogHandler):
     def get(self, comment_id):
         posts = db.GqlQuery("SELECT * FROM Comment where __key__ = KEY("
-                           "'Comment'," + comment_id + ")")
+                           "'Comment'," + comment_id + ")").fetch(1)
         comment = Comment.get_by_id(int(comment_id))
         comment.delete()
-        time.sleep(0.09)    # trial and error, wasn't getting redirected
+        time.sleep(0.1)    # trial and error, wasn't getting redirected
         # properly
         for p in posts:
-            self.redirect("/posts/" + str(p.post_id))
+            continue
+        self.redirect("/posts/" + str(p.post_id))
 
 app = webapp2.WSGIApplication([
     ('/', MultiplePostHandler),

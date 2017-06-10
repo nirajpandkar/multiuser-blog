@@ -16,26 +16,49 @@
 
         {% if p.author == logged_in_user %}
             <a href="/edit/{{ p.key().id() }}">
-                <button class="btn btn-primary pull-left">
-                    <span class="glyphicon glyphicon-pencil"></span>
+                <button class="btn btn-primary">
                     Edit
                 </button>
             </a>
 
-            <a href="/delete/{{ p.key().id() }}">
-                <button class="btn btn-error">
-                    <span class="glyphicon glyphicon-pencil"></span>
-                    Delete
-                </button>
-            </a>
+            <button class="btn btn-error" data-toggle="modal"
+                    data-target="#deletePost">
+                Delete
+            </button>
+
         {% endif %}
 
         <a href="/newcomment/{{ p.key().id() }}">
             <button class="btn btn-info">
-                <span class="glyphicon glyphicon-pencil"></span>
                 Comment
             </button>
         </a>
+    </div>
+
+
+
+
+    <!-- Modal for comment -->
+    <div class="modal fade" id="deletePost" tabindex="-1" role="dialog"
+         aria-labelledby="exampleModalLabel" aria-hidden="true">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="exampleModalLabel">Confirmation</h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body">
+            Do you really want to delete this post?
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            <a href="/delete/{{ p.key().id() }}" class="btn
+            btn-danger">Delete</a>
+          </div>
+        </div>
+      </div>
     </div>
 {% endfor %}
 

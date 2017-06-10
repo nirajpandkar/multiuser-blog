@@ -230,10 +230,13 @@ class EditPostHandler(BlogHandler):
 
 class DeletePostHandler(BlogHandler):
     def get(self, post_id):
-        post = Post.get_by_id(int(post_id))
-        post.delete()
-        time.sleep(0.1)
-        self.redirect('/posts')
+        if self.read_secure_cookie("user_id"):
+            post = Post.get_by_id(int(post_id))
+            post.delete()
+            time.sleep(0.1)
+            self.redirect("/posts")
+        else:
+            self.redirect("/login")
 
 
 class NewCommentHandler(BlogHandler):
@@ -242,7 +245,7 @@ class NewCommentHandler(BlogHandler):
             post = Post.get_by_id(int(post_id))
             self.render("newcomment.html", post=post, username=self.user)
         else:
-            self.redirect("/signup")
+            self.redirect("/login")
 
     def post(self, post_id):
         body = self.request.get("body")
@@ -262,14 +265,18 @@ class NewCommentHandler(BlogHandler):
 
 class EditCommentHandler(BlogHandler):
     def get(self, comment_id):
-        post_info = db.GqlQuery("SELECT * FROM Comment where __key__ = KEY("
-                           "'Comment'," + comment_id + ")").fetch(1)
-        for p in post_info:
-            continue
-        post = Post.get_by_id(int(p.post_id))
-        comment = Comment.get_by_id(int(comment_id))
-        time.sleep(0.1)
-        self.render("editcomment.html", comment=comment, post=post)
+        if self.read_secure_cookie("user_id"):
+            post_info = db.GqlQuery("SELECT * FROM Comment where __key__ = KEY("
+                               "'Comment'," + comment_id + ")").fetch(1)
+            for p in post_info:
+                continue
+            post = Post.get_by_id(int(p.post_id))
+            comment = Comment.get_by_id(int(comment_id))
+            time.sleep(0.1)
+            self.render("editcomment.html", comment=comment, post=post,
+                        username=self.user)
+        else:
+            self.redirect("/login")
 
     def post(self, comment_id):
         body = self.request.get("body")
@@ -288,15 +295,18 @@ class EditCommentHandler(BlogHandler):
 
 class DeleteCommentHandler(BlogHandler):
     def get(self, comment_id):
-        posts = db.GqlQuery("SELECT * FROM Comment where __key__ = KEY("
-                           "'Comment'," + comment_id + ")").fetch(1)
-        comment = Comment.get_by_id(int(comment_id))
-        comment.delete()
-        time.sleep(0.1)    # trial and error, wasn't getting redirected
-        # properly
-        for p in posts:
-            continue
-        self.redirect("/posts/" + str(p.post_id))
+        if self.read_secure_cookie("user_id"):
+            posts = db.GqlQuery("SELECT * FROM Comment where __key__ = KEY("
+                               "'Comment'," + comment_id + ")").fetch(1)
+            comment = Comment.get_by_id(int(comment_id))
+            comment.delete()
+            time.sleep(0.1)    # trial and error, wasn't getting redirected
+            # properly
+            for p in posts:
+                continue
+            self.redirect("/posts/" + str(p.post_id))
+        else:
+            self.redirect("/login")
 
 
 class PermaLinkHandler(BlogHandler):
@@ -323,10 +333,13 @@ class WelcomeHandler(BlogHandler):
 
 class LikePostHandler(BlogHandler):
     def get(self, post_id):
+
+        if not self.user:
+            return self.redirect("/login")
         post = Post.get_by_id(int(post_id))
         user_id = self.user.key().id()
 
-        print post.author + " " + self.user.name
+
         if post.author == self.user.name:
             return self.redirect("/posts/" + str(post_id))
 

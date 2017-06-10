@@ -31,6 +31,11 @@
             Comment
         </button>
     </a>
+    <a href="/likepost/{{ post.key().id() }}">
+        <button id="likebutton" class="btn btn-info">
+            Like {{ post.number_likes() }}
+        </button>
+    </a>
     </div>
     <a class="btn btn-secondary" href="/posts"><img height=20px width=30px
                                 src="../assets/left-arrow.svg"></a>

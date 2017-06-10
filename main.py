@@ -195,7 +195,8 @@ class NewPostHandler(BlogHandler):
             username = User.by_id(int(user_id)).name
             author = username
 
-            Post(subject=subject, body=body, author=author).put()
+            Post(subject=subject, body=body, author=author, liked_users=[]
+                 ).put()
             time.sleep(0.1)
             self.redirect("/posts")
 
@@ -325,11 +326,18 @@ class LikePostHandler(BlogHandler):
         post = Post.get_by_id(int(post_id))
         user_id = self.user.key().id()
 
+        print post.author + " " + self.user.name
+        if post.author == self.user.name:
+            return self.redirect("/posts/" + str(post_id))
 
-        if self.user not in post.liked_users:
+        if user_id not in post.liked_users:
             post.liked_users.append(user_id)
         else:
             post.liked_users.remove(user_id)
+
+        post.put()
+        time.sleep(0.1)
+        self.redirect("/posts/" + str(post_id))
 
 
 app = webapp2.WSGIApplication([

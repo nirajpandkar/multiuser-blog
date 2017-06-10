@@ -12,6 +12,10 @@ class Post(db.Model):
     last_edited = db.DateTimeProperty(auto_now_add=True)
     liked_users = db.ListProperty(int)
 
+    def number_likes(self):
+        number_likes = len(self.liked_users)
+        return number_likes
+
 
 class Comment(db.Model):
     body = db.TextProperty(required=True)
@@ -20,7 +24,6 @@ class Comment(db.Model):
     last_edited = db.DateTimeProperty(auto_now_add=True)
     user_id = db.IntegerProperty()
     post_id = db.IntegerProperty()
-    likes = db.IntegerProperty()
 
 
 def make_salt(length=5):

@@ -37,6 +37,7 @@
         </button>
     </a>
     </div>
+
     <a class="btn btn-secondary" href="/posts"><img height=20px width=30px
                                 src="../assets/left-arrow.svg"></a>
     <br>
@@ -64,7 +65,6 @@
             {% if c.author == logged_in_user %}
                 <a href="/editcomment/{{ c.key().id() }}">
                     <button class="btn btn-primary pull-left">
-                        <span class="glyphicon glyphicon-pencil"></span>
                         Edit
                     </button>
                 </a>
@@ -75,7 +75,7 @@
                     Delete
                 </button>
 
-
+                <br><br>
 
 
                 <!-- Modal for comment -->

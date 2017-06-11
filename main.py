@@ -195,8 +195,7 @@ class NewPostHandler(BlogHandler):
             username = User.by_id(int(user_id)).name
             author = username
 
-            Post(subject=subject, body=body, author=author, liked_users=[]
-                 ).put()
+            Post(subject=subject, body=body, author=author).put()
             time.sleep(0.1)
             self.redirect("/posts")
 

@@ -20,8 +20,8 @@ EMAIL_RE = re.compile(r"^[\S]+@[\S]+.[\S]+$")
 
 SECRET = "1497d98baea787eb6a8a676145c44212"
 
-# Hashing, Salting
 
+# Hashing, Salting functions
 
 def make_secure_val(val):
     return "%s|%s" % (val, hmac.new(SECRET, val).hexdigest())
@@ -33,8 +33,7 @@ def check_secure_val(val):
         return original
 
 
-# Validation
-
+# Validation for username, password and email
 
 def valid_username(username):
     return username and USER_RE.match(username)
@@ -47,8 +46,8 @@ def valid_password(password):
 def valid_email(email):
     return not email or EMAIL_RE.match(email)
 
-# Handlers
 
+# Handlers
 
 class BlogHandler(webapp2.RequestHandler):
     def write(self, *a, **kw):
@@ -83,8 +82,6 @@ class BlogHandler(webapp2.RequestHandler):
         uid = self.read_secure_cookie('user_id')
         self.user = uid and User.by_id(int(uid))
 
-# User authentication handlers
-
 
 class SignUpHandler(BlogHandler):
     def get(self):
@@ -98,7 +95,7 @@ class SignUpHandler(BlogHandler):
 
         have_error = False
 
-        params = dict(username=username, email=email)
+        params = dict(username_html=username, email=email)
 
         if not valid_username(username):
             params['error_username'] = "Invalid username"
@@ -116,7 +113,6 @@ class SignUpHandler(BlogHandler):
             params['error_email'] = "Invalid email"
             have_error = True
 
-        print "Params: " + str(params)
         if have_error:
             self.render("signup.html", **params)
         else:
@@ -163,6 +159,7 @@ class MainHandler(BlogHandler):
         self.render("base.html", username=self.user)
 
 
+# Handle multiple posts for the front page
 class MultiplePostHandler(BlogHandler):
     def get(self):
         posts = db.GqlQuery("select * from Post order by created DESC")
@@ -175,6 +172,7 @@ class MultiplePostHandler(BlogHandler):
                     logged_in_user=logged_in_user)
 
 
+# Handle post creation
 class NewPostHandler(BlogHandler):
     def get(self):
         if self.read_secure_cookie("user_id"):
@@ -200,6 +198,7 @@ class NewPostHandler(BlogHandler):
             self.redirect("/posts")
 
 
+# Handle post edits
 class EditPostHandler(BlogHandler):
     def get(self, post_id):
         post = Post.get_by_id(int(post_id))
@@ -214,7 +213,8 @@ class EditPostHandler(BlogHandler):
         new_subject = self.request.get("subject")
         new_body = self.request.get("body")
 
-        if not new_body or not new_subject:
+        if not new_body or not new_subject:  # if body or subject is blank
+            # give appropriate error
             post = Post.get_by_id(int(post_id))
             error = "Body and subject can't be blank!"
             self.render("edit.html", post=post, username=self.user,
@@ -227,6 +227,7 @@ class EditPostHandler(BlogHandler):
             self.redirect("/posts/" + str(post_id))
 
 
+# Handle post deletions
 class DeletePostHandler(BlogHandler):
     def get(self, post_id):
         if self.read_secure_cookie("user_id"):
@@ -238,9 +239,11 @@ class DeletePostHandler(BlogHandler):
             self.redirect("/login")
 
 
+# Handle comment creation
 class NewCommentHandler(BlogHandler):
     def get(self, post_id):
-        if self.read_secure_cookie("user_id"):
+        if self.read_secure_cookie("user_id"):  # check whether user is
+            # logged in
             post = Post.get_by_id(int(post_id))
             self.render("newcomment.html", post=post, username=self.user)
         else:
@@ -248,7 +251,7 @@ class NewCommentHandler(BlogHandler):
 
     def post(self, post_id):
         body = self.request.get("body")
-        if not body:
+        if not body:    # if body is blank give appropriate error
             post = Post.get_by_id(int(post_id))
             error = "Comment can't be blank"
             self.render("newcomment.html", post=post, username=self.user,
@@ -262,11 +265,13 @@ class NewCommentHandler(BlogHandler):
             self.redirect("/posts/" + str(post_id))
 
 
+# Handle comment edits
 class EditCommentHandler(BlogHandler):
     def get(self, comment_id):
         if self.read_secure_cookie("user_id"):
-            post_info = db.GqlQuery("SELECT * FROM Comment where __key__ = KEY("
-                               "'Comment'," + comment_id + ")").fetch(1)
+            post_info = db.GqlQuery("SELECT * FROM Comment where __key__ = "
+                                    "KEY('Comment'," + comment_id +
+                                    ")").fetch(1)
             for p in post_info:
                 continue
             post = Post.get_by_id(int(p.post_id))
@@ -292,6 +297,7 @@ class EditCommentHandler(BlogHandler):
         self.redirect("/posts/" + str(p.post_id))
 
 
+# Handle comment deletions
 class DeleteCommentHandler(BlogHandler):
     def get(self, comment_id):
         if self.read_secure_cookie("user_id"):
@@ -308,6 +314,7 @@ class DeleteCommentHandler(BlogHandler):
             self.redirect("/login")
 
 
+# Handles links to individual shareable posts
 class PermaLinkHandler(BlogHandler):
     def get(self, post_id):
         if self.user:
@@ -322,6 +329,7 @@ class PermaLinkHandler(BlogHandler):
                     comments=comments, logged_in_user=logged_in_user)
 
 
+# Handles page after login is successful
 class WelcomeHandler(BlogHandler):
     def get(self):
         if self.user:
@@ -330,16 +338,16 @@ class WelcomeHandler(BlogHandler):
             self.redirect("/signup")
 
 
+# Handles likes on a post including proper user authorization for liking a post
 class LikePostHandler(BlogHandler):
     def get(self, post_id):
 
-        if not self.user:
+        if not self.user:   # if user is not logged in redirect to login page
             return self.redirect("/login")
         post = Post.get_by_id(int(post_id))
         user_id = self.user.key().id()
 
-
-        if post.author == self.user.name:
+        if post.author == self.user.name:   # a user cannot like his own post
             return self.redirect("/posts/" + str(post_id))
 
         if user_id not in post.liked_users:

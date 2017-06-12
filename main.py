@@ -204,10 +204,12 @@ class EditPostHandler(BlogHandler):
         post = Post.get_by_id(int(post_id))
 
         if self.read_secure_cookie("user_id"):
-            if post.author == self.user.name:
+            if post.author == self.user.name:   # if logged in user is post
+                # author then render edit page otherwise not authorized
                 self.render("edit.html", post=post, username=self.user)
             else:
                 error = "Not authorized to edit the post!"
+
                 self.render("notauthorized.html", error=error, post=post)
         else:
             self.redirect("/login")

@@ -20,7 +20,7 @@ The application is live here - https://avenue-147516.appspot.com
 * Visit `console.cloud.google.com`. Create a new project.
 * Find `App Engine` on the left-side navigation and click on `Dashboard`.
 * Select Python as the language
-* Select appropriate location to server your app from.
+* Select appropriate location to serve your app from.
 
 
 ### Download and install SDK
@@ -51,12 +51,18 @@ gcloud init
 
 ## Local Development
 
-* Use `dev_appserver.py` to locally run an instance of the app.
+* Clone this repository and `cd` into it - 
 ```
-$ dev_appserver.py [PATH_TO_YOUR_APP]
+$ git clone https://github.com/nirajpandkar/multiuser-blog.git
+$ cd multiuser-blog
+```
+
+* Use `dev_appserver.py` to locally run an instance of the app. (Note the `.` after `dev_appserver.py` which indicates current directory.)
+```
+$ dev_appserver.py .
 ```
 * You can access your application at `http://localhost:8080`
-
+* You can also access your datastore here - `http://localhost:8000`
 ## Deploy application
 
 * Follow the [App Engine Quickstart](https://cloud.google.com/appengine/docs/standard/python/quickstart) to get a sample app up and running.
@@ -65,6 +71,11 @@ $ dev_appserver.py [PATH_TO_YOUR_APP]
 ```
 gcloud app deploy app.yaml --project [YOUR_PROJECT_ID]
 ```
+
+## Future Scope
+
+* Make the blog front page as minimal as possible by showing only a certain number of lines of each blog.
+* Fill the right side bar with popular and recent blog titles.
 
 ## License
 MIT © [Niraj Pandkar](https://github.com/nirajpandkar)

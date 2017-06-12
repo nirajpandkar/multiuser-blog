@@ -7,8 +7,9 @@
     <form method="post">
 
         <div class="input-group">
-            <input type="text" name="username" class="form-control" value="{{
-                    username }}" placeholder="Username" style="width:300px">
+            <input type="text" name="username" class="form-control"
+                   value="{{ username_html }}"
+                   placeholder="Username" style="width:300px">
             <span class="error">{{ error_username }}</span><br><br>
         </div>
 
@@ -33,7 +34,9 @@
         <span class="error">{{ error_email }}</span><br><br>
         </div>
 
-        <input type="submit" value="Submit" class="btn btn-primary">
+        <input type="submit" value="SignUp" class="btn btn-primary">
+        <br>
+        <a href="/login">Already a member?</a>
     </form>
 
 {% endblock %}

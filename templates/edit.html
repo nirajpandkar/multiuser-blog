@@ -14,11 +14,11 @@
         <textarea id="editor" class="form-control" rows="10"
                   name="body">{{ post.body }}</textarea>
     </div>
-    <input type="submit" value="Submit">
+    <span style="color:red">{{ error }}</span><br>
+    <input class="btn btn-primary" type="submit" value="Post">
+    <a href="/posts" class="btn btn-secondary">
+        Cancel
+    </a>
 </form>
-
-{% endblock %}
-
-{% block sidebar %}
 
 {% endblock %}

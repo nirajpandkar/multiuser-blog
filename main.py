@@ -204,7 +204,13 @@ class EditPostHandler(BlogHandler):
         post = Post.get_by_id(int(post_id))
 
         if self.read_secure_cookie("user_id"):
-            self.render("edit.html", post=post)
+            if post.author == self.user.name:   # if logged in user is post
+                # author then render edit page otherwise not authorized
+                self.render("edit.html", post=post, username=self.user)
+            else:
+                error = "Not authorized to edit the post!"
+
+                self.render("notauthorized.html", error=error, post=post)
         else:
             self.redirect("/login")
 
@@ -230,11 +236,16 @@ class EditPostHandler(BlogHandler):
 # Handle post deletions
 class DeletePostHandler(BlogHandler):
     def get(self, post_id):
+        post = Post.get_by_id(int(post_id))
         if self.read_secure_cookie("user_id"):
-            post = Post.get_by_id(int(post_id))
-            post.delete()
-            time.sleep(0.1)
-            self.redirect("/posts")
+            if post.author == self.user.name:
+                # post = Post.get_by_id(int(post_id))
+                post.delete()
+                time.sleep(0.1)
+                self.redirect("/posts")
+            else:
+                error = "Not authorized to delete the post!"
+                self.render("notauthorized.html", error=error, post=post)
         else:
             self.redirect("/login")
 
@@ -269,6 +280,7 @@ class NewCommentHandler(BlogHandler):
 class EditCommentHandler(BlogHandler):
     def get(self, comment_id):
         if self.read_secure_cookie("user_id"):
+
             post_info = db.GqlQuery("SELECT * FROM Comment where __key__ = "
                                     "KEY('Comment'," + comment_id +
                                     ")").fetch(1)
@@ -276,9 +288,13 @@ class EditCommentHandler(BlogHandler):
                 continue
             post = Post.get_by_id(int(p.post_id))
             comment = Comment.get_by_id(int(comment_id))
-            time.sleep(0.1)
-            self.render("editcomment.html", comment=comment, post=post,
-                        username=self.user)
+            if comment.author == self.user.name:
+                time.sleep(0.1)
+                self.render("editcomment.html", comment=comment, post=post,
+                            username=self.user)
+            else:
+                error = "Not authorized to edit the comment!"
+                self.render("notauthorized.html", error=error, post=post)
         else:
             self.redirect("/login")
 
@@ -304,12 +320,17 @@ class DeleteCommentHandler(BlogHandler):
             posts = db.GqlQuery("SELECT * FROM Comment where __key__ = KEY("
                                "'Comment'," + comment_id + ")").fetch(1)
             comment = Comment.get_by_id(int(comment_id))
-            comment.delete()
-            time.sleep(0.1)    # trial and error, wasn't getting redirected
-            # properly
             for p in posts:
                 continue
-            self.redirect("/posts/" + str(p.post_id))
+            if comment.author == self.user.name:
+                comment.delete()
+                time.sleep(0.1)    # trial and error, wasn't getting redirected
+                # properly
+
+                self.redirect("/posts/" + str(p.post_id))
+            else:
+                error = "Not authorized to delete the comment!"
+                self.render("notauthorized.html", error=error, post=p)
         else:
             self.redirect("/login")
 

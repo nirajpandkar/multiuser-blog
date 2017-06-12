@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+
+{% block title %} Not Authorized {% endblock %}
+{% block content %}
+    <h1 style="color:red">{{ error }}</h1>
+    <a class="btn btn-primary" href="/posts/{{ post.key().id() }}">
+        Back
+    </a>
+{% endblock %}
+

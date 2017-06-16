@@ -50,6 +50,8 @@ def valid_email(email):
 # Handlers
 
 class BlogHandler(webapp2.RequestHandler):
+    """Defines helper functions for blog front."""
+
     def write(self, *a, **kw):
         self.response.out.write(*a, **kw)
 
@@ -84,6 +86,8 @@ class BlogHandler(webapp2.RequestHandler):
 
 
 class SignUpHandler(BlogHandler):
+    """Handles the signup page and validations for incorrect entries."""
+
     def get(self):
         self.render("signup.html")
 
@@ -129,6 +133,8 @@ class SignUpHandler(BlogHandler):
 
 
 class LoginHandler(BlogHandler):
+    """Handles the login page and corresponding validations on POST."""
+
     def get(self):
         self.render("login.html")
 
@@ -149,18 +155,23 @@ class LoginHandler(BlogHandler):
 
 
 class LogoutHandler(BlogHandler):
+    """Resets the cookie and logs out user."""
+
     def get(self):
         self.reset_cookie()
         self.redirect("/signup")
 
 
 class MainHandler(BlogHandler):
+    """Serves the main page of the blog."""
+
     def get(self):
         self.render("base.html", username=self.user)
 
 
-# Handle multiple posts for the front page
 class MultiplePostHandler(BlogHandler):
+    """Handles multiple pages on the front page."""
+
     def get(self):
         posts = db.GqlQuery("select * from Post order by created DESC")
         if self.user:
@@ -172,8 +183,10 @@ class MultiplePostHandler(BlogHandler):
                     logged_in_user=logged_in_user)
 
 
-# Handle post creation
 class NewPostHandler(BlogHandler):
+    """Handle new post creation and also gives appropriate validation errors
+    if any."""
+
     def get(self):
         if self.read_secure_cookie("user_id"):
             self.render("newpost.html", username=self.user)
@@ -181,25 +194,34 @@ class NewPostHandler(BlogHandler):
             self.redirect("/login")
 
     def post(self):
-        subject = self.request.get("subject")
-        body = self.request.get("body")
+        if self.read_secure_cookie("user_id"):
+            subject = self.request.get("subject")
+            body = self.request.get("body")
 
-        if not body or not subject:
-            error = "Subject and body can't be blank!"
-            self.render("newpost.html", username=self.user, error=error,
-                        subject=subject, body=body)
+            if not body or not subject:
+                error = "Subject and body can't be blank!"
+                self.render("newpost.html", username=self.user, error=error,
+                            subject=subject, body=body)
+            else:
+                user_id = self.read_secure_cookie("user_id").split("|")[0]
+                username = User.by_id(int(user_id)).name
+
+                author = username
+
+                Post(subject=subject, body=body, author=author).put()
+                self.redirect("/posts")
         else:
-            user_id = self.read_secure_cookie("user_id").split("|")[0]
-            username = User.by_id(int(user_id)).name
-            author = username
-
-            Post(subject=subject, body=body, author=author).put()
-            time.sleep(0.1)
-            self.redirect("/posts")
+            self.redirect("/login")
 
 
-# Handle post edits
 class EditPostHandler(BlogHandler):
+    """
+    Arguments: post_id
+
+    Allows the appropriate user to edit his own post considering the user is
+    logged in.
+    """
+
     def get(self, post_id):
         post = Post.get_by_id(int(post_id))
 
@@ -209,39 +231,51 @@ class EditPostHandler(BlogHandler):
                 self.render("edit.html", post=post, username=self.user)
             else:
                 error = "Not authorized to edit the post!"
-
                 self.render("notauthorized.html", error=error, post=post)
         else:
             self.redirect("/login")
 
     def post(self, post_id):
         post = Post.get_by_id(int(post_id))
-        new_subject = self.request.get("subject")
-        new_body = self.request.get("body")
+        if self.user:
+            if post.author == self.user.name:  # post's author can
+                # only edit the post
+                new_subject = self.request.get("subject")
+                new_body = self.request.get("body")
 
-        if not new_body or not new_subject:  # if body or subject is blank
-            # give appropriate error
-            post = Post.get_by_id(int(post_id))
-            error = "Body and subject can't be blank!"
-            self.render("edit.html", post=post, username=self.user,
-                        error=error)
+                if not new_body or not new_subject:  # if body or subject is blank
+                    # give appropriate error
+                    post = Post.get_by_id(int(post_id))
+                    error = "Body and subject can't be blank!"
+                    self.render("edit.html", post=post, username=self.user,
+                                error=error)
+                else:
+                    post.subject = new_subject
+                    post.body = new_body
+                    post.last_edited = datetime.datetime.now()
+                    post.put()
+                    self.redirect("/posts/" + str(post_id))
+            else:
+                error = "Not authorized to edit the post!"
+                self.render("notauthorized.html", error=error, post=post)
         else:
-            post.subject = new_subject
-            post.body = new_body
-            post.last_edited = datetime.datetime.now()
-            post.put()
-            self.redirect("/posts/" + str(post_id))
+            self.redirect("/login")
 
 
-# Handle post deletions
 class DeletePostHandler(BlogHandler):
+    """
+    Arguments: post_id
+
+    Allows the appropriate user to delete his own post considering the
+    user is logged in.
+    """
+
     def get(self, post_id):
         post = Post.get_by_id(int(post_id))
         if self.read_secure_cookie("user_id"):
             if post.author == self.user.name:
                 # post = Post.get_by_id(int(post_id))
                 post.delete()
-                time.sleep(0.1)
                 self.redirect("/posts")
             else:
                 error = "Not authorized to delete the post!"
@@ -252,6 +286,12 @@ class DeletePostHandler(BlogHandler):
 
 # Handle comment creation
 class NewCommentHandler(BlogHandler):
+    """
+    Arguments: post_id
+
+    Allows users to comment on any post only if the user is logged in.
+    """
+
     def get(self, post_id):
         if self.read_secure_cookie("user_id"):  # check whether user is
             # logged in
@@ -262,34 +302,42 @@ class NewCommentHandler(BlogHandler):
 
     def post(self, post_id):
         body = self.request.get("body")
-        if not body:    # if body is blank give appropriate error
-            post = Post.get_by_id(int(post_id))
-            error = "Comment can't be blank"
-            self.render("newcomment.html", post=post, username=self.user,
-                        error=error)
-        else:
-            user_id = self.read_secure_cookie("user_id").split("|")[0]
-            author = User.by_id(int(user_id)).name
+        post = Post.get_by_id(int(post_id))
+        if self.user:
+            if not body:    # if body is blank give appropriate error
 
-            Comment(body=body, author=author, post_id=int(post_id)).put()
-            time.sleep(0.1)
-            self.redirect("/posts/" + str(post_id))
+                error = "Comment can't be blank"
+                self.render("newcomment.html", post=post, username=self.user,
+                            error=error)
+            else:
+                user_id = self.read_secure_cookie("user_id").split("|")[0]
+                author = User.by_id(int(user_id)).name
+
+                Comment(body=body, author=author, post_id=int(post_id)).put()
+                self.redirect("/posts/" + str(post_id))
+        else:
+            self.redirect("/login")
 
 
 # Handle comment edits
 class EditCommentHandler(BlogHandler):
+    """
+    Arguments: comment_id
+
+    Allows the appropriate user to edit his own comment considering the
+    user is logged in.
+    """
+
     def get(self, comment_id):
         if self.read_secure_cookie("user_id"):
 
             post_info = db.GqlQuery("SELECT * FROM Comment where __key__ = "
                                     "KEY('Comment'," + comment_id +
                                     ")").fetch(1)
-            for p in post_info:
-                continue
-            post = Post.get_by_id(int(p.post_id))
+            post = Post.get_by_id(int(post_info[0].post_id))
             comment = Comment.get_by_id(int(comment_id))
+
             if comment.author == self.user.name:
-                time.sleep(0.1)
                 self.render("editcomment.html", comment=comment, post=post,
                             username=self.user)
             else:
@@ -299,44 +347,57 @@ class EditCommentHandler(BlogHandler):
             self.redirect("/login")
 
     def post(self, comment_id):
-        body = self.request.get("body")
         comment = Comment.get_by_id(int(comment_id))
         post = db.GqlQuery("SELECT * FROM Comment where __key__ = KEY("
                            "'Comment'," + comment_id + ")").fetch(1)
+        if self.user:
+            if comment.author == self.user.name:    # comment's author can
+                # only edit the comment
+                body = self.request.get("body")
+                comment.body = body
+                comment.last_edited = datetime.datetime.now()
+                comment.put()
 
-        comment.body = body
-        comment.last_edited = datetime.datetime.now()
-        comment.put()
-        time.sleep(0.1)
-        for p in post:
-            continue
-        self.redirect("/posts/" + str(p.post_id))
+                self.redirect("/posts/" + str(post[0].post_id))
+            else:
+                error = "Not authorized to edit the comment!"
+                self.render("notauthorized.html", error=error, post=post[0])
+        else:
+            self.redirect("/login")
 
 
-# Handle comment deletions
 class DeleteCommentHandler(BlogHandler):
+    """
+    Arguments: post_id
+
+    Allows the appropriate user to delete his own comment considering the
+    user is logged in.
+    """
+
     def get(self, comment_id):
         if self.read_secure_cookie("user_id"):
             posts = db.GqlQuery("SELECT * FROM Comment where __key__ = KEY("
                                "'Comment'," + comment_id + ")").fetch(1)
             comment = Comment.get_by_id(int(comment_id))
-            for p in posts:
-                continue
             if comment.author == self.user.name:
                 comment.delete()
-                time.sleep(0.1)    # trial and error, wasn't getting redirected
                 # properly
 
-                self.redirect("/posts/" + str(p.post_id))
+                self.redirect("/posts/" + str(posts[0].post_id))
             else:
                 error = "Not authorized to delete the comment!"
-                self.render("notauthorized.html", error=error, post=p)
+                self.render("notauthorized.html", error=error, post=posts[0])
         else:
             self.redirect("/login")
 
 
-# Handles links to individual shareable posts
 class PermaLinkHandler(BlogHandler):
+    """
+    Arguments: post_id
+
+    Serves the shareable permalink to an individual post.
+    """
+
     def get(self, post_id):
         if self.user:
             user = self.user
@@ -350,8 +411,11 @@ class PermaLinkHandler(BlogHandler):
                     comments=comments, logged_in_user=logged_in_user)
 
 
-# Handles page after login is successful
 class WelcomeHandler(BlogHandler):
+    """
+    Serves the welcome page to the user after logging in.
+    """
+
     def get(self):
         if self.user:
             self.render("welcome.html", username=self.user)
@@ -359,8 +423,14 @@ class WelcomeHandler(BlogHandler):
             self.redirect("/signup")
 
 
-# Handles likes on a post including proper user authorization for liking a post
 class LikePostHandler(BlogHandler):
+    """
+    Arguments: post_id
+
+    Allows the users to like any post considering the user is logged in.
+    Also a user cannot like his own post.
+    """
+
     def get(self, post_id):
 
         if not self.user:   # if user is not logged in redirect to login page
@@ -377,7 +447,6 @@ class LikePostHandler(BlogHandler):
             post.liked_users.remove(user_id)
 
         post.put()
-        time.sleep(0.1)
         self.redirect("/posts/" + str(post_id))
 
 

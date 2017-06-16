@@ -14,9 +14,6 @@ template_dir = os.path.join(os.path.dirname(__file__), 'templates')
 jinja_env = jinja2.Environment(loader=jinja2.FileSystemLoader(template_dir),
                                autoescape=True)
 
-USER_RE = re.compile(r"^[a-zA-Z0-9_-]{3,20}$")
-PASS_RE = re.compile(r"^.{3,20}$")
-EMAIL_RE = re.compile(r"^[\S]+@[\S]+.[\S]+$")
 
 SECRET = "1497d98baea787eb6a8a676145c44212"
 
@@ -36,14 +33,17 @@ def check_secure_val(val):
 # Validation for username, password and email
 
 def valid_username(username):
+    USER_RE = re.compile(r"^[a-zA-Z0-9_-]{3,20}$")
     return username and USER_RE.match(username)
 
 
 def valid_password(password):
+    PASS_RE = re.compile(r"^.{3,20}$")
     return password and PASS_RE.match(password)
 
 
 def valid_email(email):
+    EMAIL_RE = re.compile(r"^[\S]+@[\S]+.[\S]+$")
     return not email or EMAIL_RE.match(email)
 
 
@@ -194,7 +194,7 @@ class NewPostHandler(BlogHandler):
             self.redirect("/login")
 
     def post(self):
-        if self.read_secure_cookie("user_id"):
+        if self.user:
             subject = self.request.get("subject")
             body = self.request.get("body")
 
@@ -238,7 +238,7 @@ class EditPostHandler(BlogHandler):
     def post(self, post_id):
         post = Post.get_by_id(int(post_id))
         if self.user:
-            if post.author == self.user.name:  # post's author can
+            if post and post.author == self.user.name:  # post's author can
                 # only edit the post
                 new_subject = self.request.get("subject")
                 new_body = self.request.get("body")
@@ -272,8 +272,8 @@ class DeletePostHandler(BlogHandler):
 
     def get(self, post_id):
         post = Post.get_by_id(int(post_id))
-        if self.read_secure_cookie("user_id"):
-            if post.author == self.user.name:
+        if self.user:
+            if post and post.author == self.user.name:
                 # post = Post.get_by_id(int(post_id))
                 post.delete()
                 self.redirect("/posts")
@@ -304,7 +304,7 @@ class NewCommentHandler(BlogHandler):
         body = self.request.get("body")
         post = Post.get_by_id(int(post_id))
         if self.user:
-            if not body:    # if body is blank give appropriate error
+            if not body and post:    # if body is blank give appropriate error
 
                 error = "Comment can't be blank"
                 self.render("newcomment.html", post=post, username=self.user,
@@ -337,7 +337,7 @@ class EditCommentHandler(BlogHandler):
             post = Post.get_by_id(int(post_info[0].post_id))
             comment = Comment.get_by_id(int(comment_id))
 
-            if comment.author == self.user.name:
+            if comment and comment.author == self.user.name:
                 self.render("editcomment.html", comment=comment, post=post,
                             username=self.user)
             else:
@@ -351,7 +351,8 @@ class EditCommentHandler(BlogHandler):
         post = db.GqlQuery("SELECT * FROM Comment where __key__ = KEY("
                            "'Comment'," + comment_id + ")").fetch(1)
         if self.user:
-            if comment.author == self.user.name:    # comment's author can
+            if comment and comment.author == self.user.name:    # comment's
+                # author can
                 # only edit the comment
                 body = self.request.get("body")
                 comment.body = body
@@ -379,7 +380,7 @@ class DeleteCommentHandler(BlogHandler):
             posts = db.GqlQuery("SELECT * FROM Comment where __key__ = KEY("
                                "'Comment'," + comment_id + ")").fetch(1)
             comment = Comment.get_by_id(int(comment_id))
-            if comment.author == self.user.name:
+            if comment and comment.author == self.user.name:
                 comment.delete()
                 # properly
 
